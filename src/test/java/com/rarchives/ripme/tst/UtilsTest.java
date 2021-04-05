@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.Arrays;
 
+import com.rarchives.ripme.ripper.rippers.InstagramRipper;
 import com.rarchives.ripme.utils.Utils;
 
 import org.apache.logging.log4j.LogManager;
@@ -19,6 +20,10 @@ public class UtilsTest {
     public void testConfigureLogger() {
         Utils.configureLogger();
         LOGGER.warn("this is a warning messaage.");
+        Utils.addRollingAppender("whatever", "log.txt", InstagramRipper.class.getPackage());
+        LOGGER.warn("this is going into the ripper log.");
+        Utils.removeAppender("whatever", InstagramRipper.class.getPackage());
+        LOGGER.warn("switched off ripper log.");
     }
 
     public void testGetEXTFromMagic()

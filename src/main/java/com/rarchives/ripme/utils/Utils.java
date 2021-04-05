@@ -1,5 +1,23 @@
 package com.rarchives.ripme.utils;
 
+import com.rarchives.ripme.ripper.AbstractRipper;
+import org.apache.commons.configuration.ConfigurationException;
+import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.core.LoggerContext;
+import org.apache.logging.log4j.core.appender.RollingFileAppender;
+import org.apache.logging.log4j.core.appender.rolling.DefaultRolloverStrategy;
+import org.apache.logging.log4j.core.appender.rolling.SizeBasedTriggeringPolicy;
+import org.apache.logging.log4j.core.appender.rolling.TriggeringPolicy;
+import org.apache.logging.log4j.core.config.AppenderRef;
+import org.apache.logging.log4j.core.config.Configuration;
+import org.apache.logging.log4j.core.config.LoggerConfig;
+
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.Clip;
+import javax.sound.sampled.Line;
+import javax.sound.sampled.LineEvent;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -29,25 +47,6 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.Clip;
-import javax.sound.sampled.Line;
-import javax.sound.sampled.LineEvent;
-
-import com.rarchives.ripme.ripper.AbstractRipper;
-
-import org.apache.commons.configuration.ConfigurationException;
-import org.apache.commons.configuration.PropertiesConfiguration;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.core.LoggerContext;
-import org.apache.logging.log4j.core.appender.RollingFileAppender;
-import org.apache.logging.log4j.core.appender.rolling.DefaultRolloverStrategy;
-import org.apache.logging.log4j.core.appender.rolling.SizeBasedTriggeringPolicy;
-import org.apache.logging.log4j.core.appender.rolling.TriggeringPolicy;
-import org.apache.logging.log4j.core.config.Configuration;
-import org.apache.logging.log4j.core.config.LoggerConfig;
 
 /**
  * Common utility functions used in various places throughout the project.
@@ -607,30 +606,61 @@ public class Utils {
      * Configures root logger, either for FILE output or just console.
      */
     public static void configureLogger() {
-        LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
-        Configuration config = ctx.getConfiguration();
-        LoggerConfig loggerConfig = config.getLoggerConfig(LogManager.ROOT_LOGGER_NAME);
-
         // write to ripme.log file if checked in GUI
         boolean logSave = getConfigBoolean("log.save", false);
         if (logSave) {
-            LOGGER.debug("add rolling appender ripmelog");
-            TriggeringPolicy tp = SizeBasedTriggeringPolicy.createPolicy("20M");
-            DefaultRolloverStrategy rs = DefaultRolloverStrategy.newBuilder().withMax("2").build();
-            RollingFileAppender rolling = RollingFileAppender.newBuilder()
-                    .setName("ripmelog")
-                    .withFileName("ripme.log")
-                    .withFilePattern("%d{yyyy-MM-dd HH:mm:ss} %p %m%n")
-                    .withPolicy(tp)
-                    .withStrategy(rs)
-                    .build();
+            addRollingAppender("ripmelog", "ripme.log", null);
+        } else {
+            removeAppender("ripmelog", null);
+        }
+    }
+
+    /**
+     * Configures root logger, either for FILE output or just console.
+     */
+    public static void addRollingAppender(String name, String filename, Package pkg) {
+        LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
+        Configuration config = ctx.getConfiguration();
+
+        LOGGER.debug("add rolling appender {}.", name);
+        TriggeringPolicy tp = SizeBasedTriggeringPolicy.createPolicy("20M");
+        DefaultRolloverStrategy rs = DefaultRolloverStrategy.newBuilder().withMax("2").build();
+        RollingFileAppender rolling = RollingFileAppender.newBuilder()
+                .setName(name)
+                .withFileName(filename)
+                .withFilePattern("%d{yyyy-MM-dd HH:mm:ss} %p %m%n")
+                .withPolicy(tp)
+                .withStrategy(rs)
+                .build();
+        LoggerConfig loggerConfig = config.getLoggerConfig(LogManager.ROOT_LOGGER_NAME);
+        if (pkg == null) {
+            // add appender to the root logger configuration
             loggerConfig.addAppender(rolling, null, null);
         } else {
-            LOGGER.debug("remove rolling appender ripmelog");
-            if (config.getAppender("ripmelog") != null) {
-                config.getAppender("ripmelog").stop();
-            }
-            loggerConfig.removeAppender("ripmelog");
+            // create a logger configuration for the package and add it there
+            AppenderRef ref = AppenderRef.createAppenderRef("rolling", null, null);
+            AppenderRef[] refs = new AppenderRef[] {ref};
+            loggerConfig.createLogger(false,null, pkg.toString(), null, refs, null, config, null);
+            loggerConfig.addAppender(rolling, null, null);
+        }
+        ctx.updateLoggers();  // This causes all Loggers to refetch information from their LoggerConfig.
+    }
+
+    public static void removeAppender(String name, Package pkg) {
+        LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
+        Configuration config = ctx.getConfiguration();
+
+        LOGGER.debug("remove appender {}.", name);
+        if (config.getAppender(name) != null) {
+            config.getAppender(name).stop();
+        }
+
+        if (pkg == null) {
+            LoggerConfig loggerConfig = config.getLoggerConfig(LogManager.ROOT_LOGGER_NAME);
+            loggerConfig.removeAppender(name);
+        } else {
+            LoggerConfig loggerConfig = config.getLoggerConfig(pkg.toString());
+            loggerConfig.removeAppender(name);
         }
         ctx.updateLoggers();  // This causes all Loggers to refetch information from their LoggerConfig.
     }

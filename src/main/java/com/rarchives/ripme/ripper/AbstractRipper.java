@@ -171,23 +171,14 @@ public abstract class AbstractRipper
      * Sets ripper's:
      *      Working directory
      *      Logger (for debugging)
-     *      FileAppender
      *      Threadpool
      * @throws IOException 
      *      Always be prepared.
      */
     public void setup() throws IOException {
         setWorkingDir(this.url);
-        // we do not care if the rollingfileappender is active, just change the logfile in case
-        // TODO this does not work - not even with
-        //                     .withFileName("${sys:logFilename}")
-        // in Utils.java, RollingFileAppender.
-//        System.setProperty("logFilename", this.workingDir + "/log.txt");
-//        LOGGER.debug("Changing log file to '{}/log.txt'", this.workingDir);
-//        LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
-//        ctx.reconfigure();
-//        ctx.updateLoggers();
-
+        // redirect file output into download folder, Utils konws if turned on or not
+        Utils.addRollingAppender("logtxt", this.workingDir + "/log.txt", this.getClass().getPackage());
         this.threadPool = new DownloadThreadPool();
     }
 
@@ -486,12 +477,8 @@ public abstract class AbstractRipper
             RipStatusMessage msg = new RipStatusMessage(STATUS.RIP_COMPLETE, rsc);
             observer.update(this, msg);
 
-            // we do not care if the rollingfileappender is active, just change the logfile in case
-            // TODO - does not work.
-//            System.setProperty("logFilename", "ripme.log");
-//            LOGGER.debug("Changing log file back to 'ripme.log'");
-//            LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
-//            ctx.reconfigure();
+            // remove
+            Utils.removeAppender("ripmelog", this.getClass().getPackage());
 
             if (Utils.getConfigBoolean("urls_only.save", false)) {
                 String urlFile = this.workingDir + File.separator + "urls.txt";
