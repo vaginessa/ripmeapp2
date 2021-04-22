@@ -83,6 +83,7 @@ buildNumber.properties
 ### gradle ###
 /.gradle
 /build
+/*/build
 # Avoid ignoring gradle wrapper jar file (.jar files are usually ignored)
 !/gradle/wrapper/gradle-wrapper.jar
 
