@@ -116,3 +116,23 @@ Please note that some tests may fail as sites change and our rippers
 become out of date. Start by building and testing a released version
 of RipMe and then ensure that any changes you make do not cause more
 tests to break.
+
+# New compose-jb based GUI, experiment
+2021-04-20: the following can be built only with a jetbrains intellij
+alpha, a recent gradle, and java-15. it is based on 
+[jetbrains compose](https://github.com/JetBrains/compose-jb), which
+should have the potential to produce a desktop app, as well as an 
+android and ios application.
+
+some references of concepts used:
+* https://developer.android.com/codelabs/jetpack-compose-basics
+* https://developer.android.com/jetpack/compose/layout
+* https://kotlinlang.org/docs/lambdas.html#function-types
+
+ 
+```bash
+./gradlew clean build -x test --warning-mode all
+./gradlew packageUberJarForCurrentOS
+java -jar desktop/build/compose/jars/KotlinMultiplatformComposeDesktopApplication-linux-x64-1.0.0.jar
+```
+
