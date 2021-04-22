@@ -1,1 +1,1 @@
-rootProject.name = "ripme"
+include(":common", ":android", ":desktop")
