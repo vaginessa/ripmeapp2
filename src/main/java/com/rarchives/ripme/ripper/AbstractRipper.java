@@ -400,6 +400,14 @@ public abstract class AbstractRipper
             saveAs = url.toExternalForm();
             saveAs = saveAs.substring(saveAs.lastIndexOf('/')+1);
         }
+        // shorten filename to 240 characters, to leave some space for an extension, do not truncate it,
+        // but add a hash
+        String strToHash;
+        if (240 < saveAs.length() ) {
+            String sub = saveAs.substring(0,239);
+            strToHash = saveAs.substring(240);
+            saveAs = sub + djbHash(strToHash);
+        }
         if (extension == null) {
             // Get the extension of the file
             String[] lastBitOfURL = url.toExternalForm().split("/");
